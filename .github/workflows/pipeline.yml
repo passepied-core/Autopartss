@@ -1,0 +1,23 @@
+name: CI/CD AutoParts
+
+on:
+  push:
+    branches:
+      - develop
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Construir imagen Docker
+        run: docker build -t autoparts:latest .
+
+      - name: Ejecutar pruebas unitarias
+        run: docker run --rm --env-file .env autoparts:latest python manage.py test tienda
