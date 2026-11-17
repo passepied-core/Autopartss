@@ -20,4 +20,12 @@ jobs:
         run: docker build -t autoparts:latest .
 
       - name: Ejecutar pruebas unitarias
-        run: docker run --rm --env-file .env autoparts:latest python manage.py test tienda
+      - name: Analizar imagen con Docker Scout
+        uses: docker/scout-action@v1
+        with:
+          command: cves
+          image: local://autoparts:latest
+          only-severities: critical
+          exit-code: true
+          dockerhub-user: ${{ secrets.DOCKERHUB_USERNAME }}
+          dockerhub-password: ${{ secrets.DOCKERHUB_TOKEN }}
