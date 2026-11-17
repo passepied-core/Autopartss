@@ -1,0 +1,51 @@
+
+name: CI/CD AutoParts
+
+on:
+  push:
+    branches:
+      - develop
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Construir imagen Docker
+        run: docker build -t autoparts:latest .
+
+      - name: Ejecutar pruebas unitarias
+        run: docker run --rm --env-file .env autoparts:latest python manage.py test tienda
+
+      - name: Analizar imagen con Docker Scout
+        uses: docker/scout-action@221e7f4860634eeb1579e3bd7ca232e577bd1864
+        with:
+          command: cves
+          image: local://autoparts:latest
+          only-severities: critical
+          exit-code: true
+          dockerhub-user: ${{ secrets.DOCKERHUB_USERNAME }}
+          dockerhub-password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Iniciar sesión en Docker Hub
+        if: github.event_name == 'push'
+        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Publicar imagen en Docker Hub
+        if: github.event_name == 'push'
+        run: |
+          docker tag autoparts:latest refrigerador11/autoparts:latest
+          docker push refrigerador11/autoparts:latest
